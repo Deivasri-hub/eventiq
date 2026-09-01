@@ -75,31 +75,6 @@ export default function SignInPage() {
           <p className="text-sm text-slate-500">Access your personalized AllCollegeEvent AI recommendations</p>
         </div>
 
-        {/* DEMO QUICK LOGIN BUTTONS */}
-        <div className="bg-purple-50/80 rounded-2xl p-4 border border-purple-100 space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-purple-700 block text-center">
-            🚀 Instant Hackathon Demo Sign-In
-          </span>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => loginDemo('student@ace.demo', 'student123', 'student')}
-              className="px-3 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all"
-            >
-              <UserCheck className="w-4 h-4" />
-              Demo Student
-            </button>
-            <button
-              type="button"
-              onClick={() => loginDemo('organizer@ace.demo', 'organizer123', 'organizer')}
-              className="px-3 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all"
-            >
-              <UserCheck className="w-4 h-4" />
-              Demo Organizer
-            </button>
-          </div>
-        </div>
-
         {error && (
           <div className="p-3 rounded-xl bg-red-50 text-red-600 text-xs font-medium flex items-center gap-2 border border-red-100">
             <ShieldAlert className="w-4 h-4 shrink-0" />
@@ -117,7 +92,7 @@ export default function SignInPage() {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="student@ace.demo"
+                placeholder="you@example.com"
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-purple-600 text-sm font-medium"
               />
             </div>
