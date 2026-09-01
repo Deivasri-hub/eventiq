@@ -152,7 +152,7 @@ function seedLocalData(): void {
     id: 1,
     email: 'student@ace.demo',
     password_hash: studentHash,
-    name: 'Alex Rivera',
+    name: 'Student User',
     role: 'student',
     created_at: new Date().toISOString()
   };
@@ -275,7 +275,7 @@ async function seedPgData(): Promise<void> {
 
   const uRes = await pgPool.query(
     `INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id`,
-    ['student@ace.demo', studentHash, 'Alex Rivera', 'student']
+    ['student@ace.demo', studentHash, 'Student User', 'student']
   );
   const studentId = uRes.rows[0].id;
 
