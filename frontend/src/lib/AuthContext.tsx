@@ -25,18 +25,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('ace_token');
-    const storedUser = localStorage.getItem('ace_user');
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('ace_token');
+      const storedUser = localStorage.getItem('ace_user');
 
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        setUser({ id: 1, email: 'student@ace.demo', name: 'Alex Rivera', role: 'student' });
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
       }
-    } else {
-      setUser({ id: 1, email: 'student@ace.demo', name: 'Alex Rivera', role: 'student' });
     }
     setIsLoading(false);
   }, []);
@@ -44,15 +46,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = (newToken: string, newUser: User) => {
     setToken(newToken);
     setUser(newUser);
-    localStorage.setItem('ace_token', newToken);
-    localStorage.setItem('ace_user', JSON.stringify(newUser));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ace_token', newToken);
+      localStorage.setItem('ace_user', JSON.stringify(newUser));
+    }
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('ace_token');
-    localStorage.removeItem('ace_user');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('ace_token');
+      localStorage.removeItem('ace_user');
+    }
   };
 
   return (
