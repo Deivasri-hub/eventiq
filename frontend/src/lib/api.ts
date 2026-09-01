@@ -180,21 +180,21 @@ function handleClientFallback<T>(endpoint: string, options: RequestInit): T {
   if (endpoint.includes('/auth/signup')) {
     const user = {
       id: Date.now(),
-      email: bodyData.email || 'student@eventiq.demo',
-      name: bodyData.name || 'EventIQ User',
+      email: bodyData.email || 'user@eventiq.app',
+      name: bodyData.name || (bodyData.email ? bodyData.email.split('@')[0] : 'EventIQ User'),
       role: bodyData.role || 'student'
     };
-    return { token: 'demo-jwt-token', user } as T;
+    return { token: 'jwt-user-token-' + Date.now(), user } as T;
   }
 
   if (endpoint.includes('/auth/login')) {
     const user = {
-      id: 1,
-      email: bodyData.email || 'student@eventiq.demo',
-      name: bodyData.email ? bodyData.email.split('@')[0] : 'EventIQ User',
+      id: Date.now(),
+      email: bodyData.email || 'user@eventiq.app',
+      name: bodyData.name || (bodyData.email ? bodyData.email.split('@')[0] : 'EventIQ User'),
       role: bodyData.email?.includes('organizer') ? 'organizer' : 'student'
     };
-    return { token: 'demo-jwt-token', user } as T;
+    return { token: 'jwt-user-token-' + Date.now(), user } as T;
   }
 
   if (endpoint.includes('/students/profile')) {

@@ -32,7 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (storedToken && storedUser) {
         try {
           const parsed = JSON.parse(storedUser);
-          if (parsed.email === 'student@ace.demo' || parsed.name === 'Alex Rivera' || parsed.email === 'organizer@ace.demo') {
+          if (parsed.name === 'Alex Rivera') {
             localStorage.removeItem('ace_token');
             localStorage.removeItem('ace_user');
             setUser(null);
