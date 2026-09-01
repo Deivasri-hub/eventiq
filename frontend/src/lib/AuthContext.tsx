@@ -30,14 +30,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const storedUser = localStorage.getItem('ace_user');
 
       if (storedToken && storedUser) {
-        setToken(storedToken);
         try {
-          setUser(JSON.parse(storedUser));
+          const parsed = JSON.parse(storedUser);
+          if (parsed.email === 'student@ace.demo' || parsed.name === 'Alex Rivera' || parsed.email === 'organizer@ace.demo') {
+            localStorage.removeItem('ace_token');
+            localStorage.removeItem('ace_user');
+            setUser(null);
+            setToken(null);
+          } else {
+            setToken(storedToken);
+            setUser(parsed);
+          }
         } catch {
+          localStorage.removeItem('ace_token');
+          localStorage.removeItem('ace_user');
           setUser(null);
+          setToken(null);
         }
       } else {
         setUser(null);
+        setToken(null);
       }
     }
     setIsLoading(false);

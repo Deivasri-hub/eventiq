@@ -26,7 +26,7 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
             <span className="text-xs font-bold text-slate-400 uppercase">Account Name</span>
-            <div className="text-sm font-bold text-slate-900 mt-1">{user?.name || 'Alex Rivera'}</div>
+            <div className="text-sm font-bold text-slate-900 mt-1">{user?.name || 'Student User'}</div>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
