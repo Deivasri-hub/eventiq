@@ -117,8 +117,7 @@ function getHeaders(): HeadersInit {
   return headers;
 }
 
-// Default Fallback Data when backend server is offline/unreachable on client
-const MOCK_EVENTS: EventItem[] = [
+const DEFAULT_MOCK_EVENTS: EventItem[] = [
   {
     id: 1,
     event_code: 'EVT001',
@@ -171,11 +170,57 @@ const MOCK_EVENTS: EventItem[] = [
   }
 ];
 
+function getStoredEventsTS(): EventItem[] {
+  if (typeof window === 'undefined') return DEFAULT_MOCK_EVENTS;
+  try {
+    const raw = localStorage.getItem('eventiq_events');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  localStorage.setItem('eventiq_events', JSON.stringify(DEFAULT_MOCK_EVENTS));
+  return DEFAULT_MOCK_EVENTS;
+}
+
+function saveStoredEventsTS(events: EventItem[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem('eventiq_events', JSON.stringify(events));
+  } catch (e) {}
+}
+
+function getSavedIdsTS(): number[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem('eventiq_saved_ids');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return [];
+}
+
+function toggleSavedIdTS(id: number): boolean {
+  const ids = getSavedIdsTS();
+  const index = ids.indexOf(id);
+  let isSaved = false;
+  if (index >= 0) {
+    ids.splice(index, 1);
+    isSaved = false;
+  } else {
+    ids.push(id);
+    isSaved = true;
+  }
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('eventiq_saved_ids', JSON.stringify(ids));
+  }
+  return isSaved;
+}
+
 function handleClientFallback<T>(endpoint: string, options: RequestInit): T {
   let bodyData: any = {};
   if (options.body && typeof options.body === 'string') {
     try { bodyData = JSON.parse(options.body); } catch (e) {}
   }
+
+  const events = getStoredEventsTS();
+  const savedIds = getSavedIdsTS();
 
   if (endpoint.includes('/auth/signup')) {
     const user = {
@@ -211,51 +256,87 @@ function handleClientFallback<T>(endpoint: string, options: RequestInit): T {
     } as T;
   }
 
-  if (endpoint.includes('/recommendations') || endpoint === '/events') {
-    return MOCK_EVENTS as T;
-  }
-
-  if (endpoint.includes('/recommendation')) {
+  if (endpoint.includes('/ai/analyze-event')) {
+    const skills = bodyData.requiredSkills || [];
     return {
-      event: MOCK_EVENTS[0],
-      recommendation: {
-        eventId: 1,
-        matchScore: 94,
-        subScores: { skillMatchPercent: 95, interestMatchPercent: 90, careerMatchPercent: 95, locationMatchPercent: 100, eligibilityMatchPercent: 100 },
-        reasons: ['Direct skill overlap', 'Matches career goals'],
-        isSimilarStudentRecommended: true,
-        similarStudentReason: 'Registered by 14 peer students',
-        skillDetails: {
-          matchedSkills: ['Python', 'Problem Solving'],
-          missingSkills: ['EdTech'],
-          skillMatchRatio: '2/3',
-          gapItems: [{ skill: 'EdTech', matched: false, whyItMatters: 'Key for project track', difficulty: 'Beginner', recommendation: 'Review EdTech case studies' }]
-        }
-      },
-      isSaved: false,
-      isRegistered: false
+      smartCategory: 'AI & Data Science',
+      skillTags: skills.length ? skills : ['Python', 'Machine Learning', 'AI'],
+      targetAudience: [
+        { department: 'AI & Data Science (AI & DS)', matchPercent: 94 },
+        { department: 'Computer Science & Engineering (CSE)', matchPercent: 88 },
+        { department: 'Information Technology (IT)', matchPercent: 82 }
+      ],
+      difficulty: 'Intermediate',
+      careerRelevance: ['AI Engineer', 'ML Architect', 'Fullstack Developer'],
+      completenessScore: 92,
+      qualityScore: 96,
+      urgency: 'High',
+      recommendationsForOrganizer: [
+        'Great skill alignment! Highlight hands-on AI project tracks in your description.',
+        'Offer certificates or prize incentives to maximize registrations.'
+      ]
     } as T;
   }
 
-  if (endpoint.includes('/register')) {
-    return { message: 'Successfully registered for event', eventId: 1 } as T;
+  if (endpoint === '/organizer/events' && options.method === 'POST') {
+    const newEvt: EventItem = {
+      id: Date.now(),
+      event_code: 'EVT-' + Math.floor(Math.random() * 10000),
+      title: bodyData.title || bodyData.event_name || 'New Event',
+      description: bodyData.description || '',
+      event_type: bodyData.event_type || 'Hackathon',
+      category: bodyData.category || 'Academic & Professional',
+      mode: bodyData.mode || 'Online',
+      location: bodyData.location || 'Online',
+      start_date: bodyData.start_date || new Date().toISOString().split('T')[0],
+      end_date: bodyData.end_date || new Date().toISOString().split('T')[0],
+      registration_fee: bodyData.registration_fee || 0,
+      is_free: Boolean(bodyData.is_free),
+      required_skills: bodyData.required_skills || [],
+      target_audience: bodyData.target_audience || ['Students'],
+      difficulty: bodyData.difficulty || 'Intermediate',
+      career_relevance: ['Software Developer', 'AI Engineer'],
+      status: bodyData.status || 'Upcoming',
+      organizer_name: 'ACE Organizers Hub',
+      matchScore: 95
+    };
+    events.unshift(newEvt);
+    saveStoredEventsTS(events);
+    return newEvt as T;
+  }
+
+  if (endpoint.includes('/organizer/events')) {
+    return events as T;
+  }
+
+  if (endpoint.includes('/recommendations') || endpoint === '/events') {
+    const mapped = events.map(e => ({
+      ...e,
+      isSaved: savedIds.includes(e.id),
+      matchScore: e.matchScore || 90
+    }));
+    return mapped as T;
   }
 
   if (endpoint.includes('/save')) {
-    return { saved: true } as T;
+    const parts = endpoint.split('/');
+    const id = parseInt(parts[2], 10);
+    const isSaved = toggleSavedIdTS(id);
+    return { saved: isSaved } as T;
   }
 
-  if (endpoint.includes('/registrations') || endpoint.includes('/saved-events')) {
-    return [MOCK_EVENTS[0]] as T;
+  if (endpoint.includes('/saved-events')) {
+    const saved = events.filter(e => savedIds.includes(e.id)).map(e => ({ ...e, isSaved: true }));
+    return saved as T;
   }
 
   if (endpoint.includes('/organizer/dashboard')) {
     return {
-      totalEvents: 6,
-      activeEvents: 4,
+      totalEvents: events.length,
+      activeEvents: events.length,
       registrations: 512,
       views: 4290,
-      recentEvents: MOCK_EVENTS,
+      recentEvents: events,
       audienceInsights: [
         { department: 'AI & Data Science (AI & DS)', fitScore: 88 },
         { department: 'Computer Science & Engineering (CSE)', fitScore: 82 }
@@ -281,9 +362,18 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
       throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
     }
 
-    return res.json();
+    const data = await res.json();
+    if (endpoint === '/organizer/events' && options.method === 'POST' && data && data.id) {
+      const events = getStoredEventsTS();
+      events.unshift(data);
+      saveStoredEventsTS(events);
+    }
+    if (endpoint.includes('/save') && options.method === 'POST') {
+      const parts = endpoint.split('/');
+      toggleSavedIdTS(parseInt(parts[2], 10));
+    }
+    return data;
   } catch (err: any) {
-    console.warn(`API call to ${endpoint} failed, using intelligent client fallback:`, err.message);
     return handleClientFallback<T>(endpoint, options);
   }
 }

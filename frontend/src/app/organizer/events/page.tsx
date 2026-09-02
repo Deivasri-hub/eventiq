@@ -11,10 +11,19 @@ export default function OrganizerEventsPage() {
 
   useEffect(() => {
     fetchApi<EventItem[]>('/organizer/events')
-      .then(res => setEvents(res))
-      .catch(err => console.error(err))
+      .then(res => {
+        if (Array.isArray(res)) setEvents(res);
+        else if (res && Array.isArray((res as any).events)) setEvents((res as any).events);
+        else setEvents([]);
+      })
+      .catch(err => {
+        console.error(err);
+        setEvents([]);
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  const eventsList = events || [];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -39,9 +48,15 @@ export default function OrganizerEventsPage() {
           <RefreshCw className="w-8 h-8 text-purple-600 animate-spin mx-auto mb-2" />
           Loading organizer events...
         </div>
+      ) : eventsList.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 text-center text-slate-500 border border-purple-100 space-y-3">
+          <Layers className="w-12 h-12 text-slate-300 mx-auto" />
+          <h3 className="text-lg font-bold text-slate-800">No Events Created Yet</h3>
+          <p className="text-sm text-slate-500">Click "Create New Event" to publish your first event and run AI intelligence audits.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map(evt => (
+          {eventsList.map(evt => (
             <div key={evt.id} className="bg-white rounded-3xl p-6 border border-purple-100 shadow-sm flex flex-col justify-between space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -49,7 +64,7 @@ export default function OrganizerEventsPage() {
                     {evt.event_type}
                   </span>
                   <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                    {evt.status}
+                    {evt.status || 'Upcoming'}
                   </span>
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 line-clamp-1">{evt.title}</h3>

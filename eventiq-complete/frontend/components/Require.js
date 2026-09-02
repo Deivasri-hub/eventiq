@@ -1,0 +1,2 @@
+'use client'; import {useEffect,useState} from 'react'; import {auth} from '../lib/api'; import {useRouter} from 'next/navigation';
+export default function Require({children,role}){const [ok,setOk]=useState(false);const router=useRouter();useEffect(()=>{const u=auth.user();if(!u||role&&u.role!==role)router.replace('/signin');else setOk(true)},[router,role]);return ok?children:<div className="min-h-screen grid place-items-center">Loading EventIQ…</div>}
