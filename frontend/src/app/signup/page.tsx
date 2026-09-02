@@ -109,7 +109,7 @@ export default function SignUpPage() {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="alex@example.com"
+                placeholder="you@example.com"
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-purple-600 text-sm font-medium"
               />
             </div>

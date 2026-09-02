@@ -75,7 +75,7 @@ export default function StudentDashboard() {
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            Welcome back, {user?.name || 'Alex'}! 👋
+            Welcome back, {user?.name || 'Student'}! 👋
           </h1>
 
           <p className="text-purple-100 text-sm sm:text-base leading-relaxed">
