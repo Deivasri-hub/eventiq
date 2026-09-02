@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { MapPin, Calendar, Bookmark, BookmarkCheck, ArrowRight, Users, Sparkles } from 'lucide-react';
-import { EventItem, fetchApi, trackInteraction } from '../lib/api';
+import { EventItem, fetchApi } from '../lib/api';
 import { MatchBadge } from './MatchBadge';
 
 interface EventCardProps {
@@ -23,7 +23,6 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onSaveToggle }) => 
       const res = await fetchApi<{ saved: boolean }>(`/events/${event.id}/save`, { method: 'POST' });
       setIsSaved(res.saved);
       if (onSaveToggle) onSaveToggle(event.id, res.saved);
-      trackInteraction(event.id, 'SAVE');
     } catch (err) {
       console.error(err);
     } finally {
@@ -141,7 +140,6 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onSaveToggle }) => 
 
             <Link
               href={`/events/${event.id}`}
-              onClick={() => trackInteraction(event.id, 'CLICK')}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-sm transition-all"
             >
               View Details

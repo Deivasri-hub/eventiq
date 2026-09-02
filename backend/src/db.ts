@@ -77,14 +77,6 @@ export interface SavedEvent {
   saved_at: string;
 }
 
-export interface UserInteraction {
-  id: number;
-  user_id: number;
-  event_id: number;
-  action: 'VIEW' | 'CLICK' | 'LIKE' | 'SAVE' | 'REGISTER' | 'DISMISS';
-  timestamp: string;
-}
-
 interface DbSchema {
   users: User[];
   student_profiles: StudentProfile[];
@@ -92,7 +84,6 @@ interface DbSchema {
   events: EventItem[];
   registrations: Registration[];
   saved_events: SavedEvent[];
-  user_interactions: UserInteraction[];
 }
 
 let dbData: DbSchema = {
@@ -101,8 +92,7 @@ let dbData: DbSchema = {
   organizers: [],
   events: [],
   registrations: [],
-  saved_events: [],
-  user_interactions: []
+  saved_events: []
 };
 
 let pgPool: Pool | null = null;
@@ -526,50 +516,5 @@ export async function getSavedEventIds(userId: number): Promise<number[]> {
 }
 
 export async function getRegisteredEventIds(userId: number): Promise<number[]> {
-  return (dbData.registrations || []).filter(r => r.user_id === userId).map(r => r.event_id);
+  return dbData.registrations.filter(r => r.user_id === userId).map(r => r.event_id);
 }
-
-export async function recordUserInteraction(
-  userId: number,
-  eventId: number,
-  action: 'VIEW' | 'CLICK' | 'LIKE' | 'SAVE' | 'REGISTER' | 'DISMISS'
-): Promise<UserInteraction> {
-  const interactions = dbData.user_interactions || [];
-  const newInteraction: UserInteraction = {
-    id: interactions.length + 1,
-    user_id: userId,
-    event_id: eventId,
-    action,
-    timestamp: new Date().toISOString()
-  };
-  interactions.push(newInteraction);
-  dbData.user_interactions = interactions;
-  saveToDisk();
-
-  if (isPgAvailable && pgPool) {
-    try {
-      await pgPool.query(
-        'INSERT INTO user_interactions(user_id, event_id, action) VALUES($1, $2, $3)',
-        [userId, eventId, action]
-      );
-    } catch (e) {
-      console.error('PostgreSQL interaction store warning:', e);
-    }
-  }
-
-  return newInteraction;
-}
-
-export async function getUserInteractions(userId: number): Promise<UserInteraction[]> {
-  if (isPgAvailable && pgPool) {
-    try {
-      const q = await pgPool.query(
-        'SELECT * FROM user_interactions WHERE user_id=$1 ORDER BY timestamp DESC',
-        [userId]
-      );
-      if (q.rows.length > 0) return q.rows;
-    } catch (e) {}
-  }
-  return (dbData.user_interactions || []).filter(i => i.user_id === userId);
-}
-

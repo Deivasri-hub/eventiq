@@ -381,12 +381,3 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
     return handleClientFallback<T>(endpoint, options);
   }
 }
-
-export function trackInteraction(eventId: number | string, action: 'VIEW' | 'CLICK' | 'LIKE' | 'SAVE' | 'REGISTER' | 'DISMISS') {
-  if (!eventId || !action) return;
-  fetchApi('/interactions', {
-    method: 'POST',
-    body: JSON.stringify({ event_id: eventId, action }),
-  }).catch(() => {});
-}
-
