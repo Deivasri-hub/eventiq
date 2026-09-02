@@ -10,9 +10,12 @@ export default function SavedEventsPage() {
   const [loading, setLoading] = useState(true);
 
   const loadSaved = () => {
-    fetchApi<EventItem[]>('/saved-events')
-      .then(res => setSavedEvents(res))
-      .catch(err => console.error(err))
+    fetchApi<EventItem[]>('/saved')
+      .then(res => setSavedEvents(Array.isArray(res) ? res : []))
+      .catch(err => {
+        console.error(err);
+        setSavedEvents([]);
+      })
       .finally(() => setLoading(false));
   };
 

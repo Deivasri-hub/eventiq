@@ -353,6 +353,16 @@ app.delete('/api/events/:id/save', authenticateToken, async (req: AuthRequest, r
   }
 });
 
+app.get('/api/saved', authenticateToken, async (req: AuthRequest, res: Response): Promise<any> => {
+  try {
+    const userId = req.user?.id || 1;
+    const events = await getUserSavedEvents(userId);
+    return res.json(events);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/saved-events', authenticateToken, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const userId = req.user?.id || 1;
