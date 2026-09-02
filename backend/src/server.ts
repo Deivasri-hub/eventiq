@@ -92,6 +92,26 @@ app.post('/api/auth/login', async (req, res): Promise<any> => {
   }
 });
 
+app.post('/api/auth/reset-password', async (req, res): Promise<any> => {
+  try {
+    const { email, newPassword } = req.body;
+    if (!email || !newPassword) {
+      return res.status(400).json({ error: 'Email and new password are required.' });
+    }
+
+    const user = await findUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ error: 'User with this email was not found.' });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    user.password_hash = passwordHash;
+    return res.json({ message: 'Password updated successfully! Please sign in with your new password.' });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Not authenticated' });

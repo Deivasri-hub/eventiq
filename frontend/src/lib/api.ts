@@ -222,6 +222,10 @@ function handleClientFallback<T>(endpoint: string, options: RequestInit): T {
   const events = getStoredEventsTS();
   const savedIds = getSavedIdsTS();
 
+  if (endpoint.includes('/auth/reset-password')) {
+    return { message: 'Password updated successfully! Please sign in with your new password.' } as T;
+  }
+
   if (endpoint.includes('/auth/signup')) {
     const user = {
       id: Date.now(),

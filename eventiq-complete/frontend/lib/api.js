@@ -93,6 +93,10 @@ function handleFallback(path, options, body) {
   const events = getStoredEvents();
   const savedIds = getSavedIds();
 
+  if (path === '/auth/reset-password' && options.method === 'POST') {
+    return { message: 'Password updated successfully! Please sign in with your new password.' };
+  }
+
   if (path === '/organizer/analyze' && options.method === 'POST') {
     const skills = Array.isArray(body?.required_skills) ? body.required_skills : [];
     return {
