@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { MapPin, CalendarDays, Bookmark, BookmarkCheck } from 'lucide-react';
-import { api } from '../lib/api';
+import { api, trackInteraction } from '../lib/api';
 
 export default function EventCard({ event, score, onSaveToggle }) {
   const [saved, setSaved] = useState(Boolean(event.is_saved));
@@ -18,6 +18,7 @@ export default function EventCard({ event, score, onSaveToggle }) {
       const nextSaved = res.saved !== undefined ? res.saved : !saved;
       setSaved(nextSaved);
       if (onSaveToggle) onSaveToggle(event.id, nextSaved);
+      trackInteraction(event.id, 'SAVE');
     } catch (err) {
       setSaved(!saved);
     } finally {
@@ -78,7 +79,11 @@ export default function EventCard({ event, score, onSaveToggle }) {
         </div>
       </div>
       <div className="p-4 pt-0">
-        <Link href={`/events/${event.id}`} className="btn btn-primary block text-center mt-2 text-sm">
+        <Link
+          href={`/events/${event.id}`}
+          onClick={() => trackInteraction(event.id, 'CLICK')}
+          className="btn btn-primary block text-center mt-2 text-sm"
+        >
           View Event
         </Link>
       </div>

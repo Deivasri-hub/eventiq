@@ -20,10 +20,18 @@ import {
   getUserSavedEvents,
   getSavedEventIds,
   getRegisteredEventIds,
+  recordUserInteraction,
+  getUserInteractions,
 } from './db';
 import { generateToken, authenticateToken, AuthRequest } from './auth';
 import { calculateRecommendation } from './recommendation';
 import { analyzeEventDetails } from './aiEngine';
+import {
+  buildBehavioralProfile,
+  calculateBehaviorScore,
+  combineHybridScore,
+  UserInteractionRecord,
+} from './behaviorEngine';
 
 dotenv.config();
 
@@ -194,6 +202,35 @@ app.post('/api/events', authenticateToken, async (req: AuthRequest, res: Respons
 // ----------------------------------------------------
 // RECOMMENDATION & SKILL GAP ENDPOINTS
 // ----------------------------------------------------
+// ----------------------------------------------------
+// INTERACTION TRACKING API ENDPOINT (PART 2)
+// ----------------------------------------------------
+app.post('/api/interactions', authenticateToken, async (req: AuthRequest, res: Response): Promise<any> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'Authentication required' });
+
+    const { event_id, action } = req.body;
+    const eventId = parseInt(event_id, 10);
+    const validActions = ['VIEW', 'CLICK', 'LIKE', 'SAVE', 'REGISTER', 'DISMISS'];
+
+    if (!eventId || !validActions.includes(action)) {
+      return res.status(400).json({ error: 'Valid event_id and action are required' });
+    }
+
+    const eventItem = await getEventById(eventId);
+    if (!eventItem) return res.status(404).json({ error: 'Event not found' });
+
+    const record = await recordUserInteraction(userId, eventId, action as any);
+    return res.status(201).json({ success: true, interaction: record });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------------------------------------
+// HYBRID RECOMMENDATION ENDPOINTS (PART 8 & 10)
+// ----------------------------------------------------
 app.get('/api/recommendations', authenticateToken, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const userId = req.user?.id || 1;
@@ -215,12 +252,34 @@ app.get('/api/recommendations', authenticateToken, async (req: AuthRequest, res:
     const savedIds = await getSavedEventIds(userId);
     const registeredIds = await getRegisteredEventIds(userId);
 
+    // Fetch user behavioral interactions
+    const rawInteractions = await getUserInteractions(userId);
+    const userBehaviorProfile = buildBehavioralProfile(rawInteractions as UserInteractionRecord[], events);
+
     const recommendations = events.map(evt => {
       const rec = calculateRecommendation(profile, evt, allProfiles, allRegistrations);
+      const profileScore = rec.matchScore;
+
+      // Calculate behavioral score & combine hybrid score (70% profile / 30% behavior max)
+      const behaviorRes = calculateBehaviorScore(evt, userBehaviorProfile);
+      const { finalScore, behaviorWeightUsed } = combineHybridScore(
+        profileScore,
+        behaviorRes.score,
+        userBehaviorProfile.totalInteractions
+      );
+
+      const updatedReasons = [...rec.reasons];
+      if (behaviorWeightUsed > 0 && behaviorRes.topMatchTag) {
+        updatedReasons.unshift(`⭐ Recommended because you frequently interact with ${behaviorRes.topMatchTag} opportunities`);
+      }
+
       return {
         ...evt,
-        matchScore: rec.matchScore,
-        reasons: rec.reasons,
+        matchScore: finalScore,
+        score: finalScore,
+        profileScore,
+        behaviorScore: behaviorRes.score,
+        reasons: updatedReasons,
         subScores: rec.subScores,
         isSimilarStudentRecommended: rec.isSimilarStudentRecommended,
         similarStudentReason: rec.similarStudentReason,
@@ -255,15 +314,37 @@ app.get('/api/events/:id/recommendation', authenticateToken, async (req: AuthReq
       previous_participations: ['HACKNIMA 2026'],
     };
 
+    const events = await getAllEvents();
     const allProfiles = await getAllStudentProfiles();
     const allRegistrations = await getAllRegistrations();
     const rec = calculateRecommendation(profile, evt, allProfiles, allRegistrations);
     const savedIds = await getSavedEventIds(userId);
     const registeredIds = await getRegisteredEventIds(userId);
 
+    const rawInteractions = await getUserInteractions(userId);
+    const userBehaviorProfile = buildBehavioralProfile(rawInteractions as UserInteractionRecord[], events);
+    const behaviorRes = calculateBehaviorScore(evt, userBehaviorProfile);
+    const { finalScore, behaviorWeightUsed } = combineHybridScore(
+      rec.matchScore,
+      behaviorRes.score,
+      userBehaviorProfile.totalInteractions
+    );
+
+    const updatedReasons = [...rec.reasons];
+    if (behaviorWeightUsed > 0 && behaviorRes.topMatchTag) {
+      updatedReasons.unshift(`⭐ Recommended because you frequently interact with ${behaviorRes.topMatchTag} opportunities`);
+    }
+
     return res.json({
       event: evt,
-      recommendation: rec,
+      recommendation: {
+        ...rec,
+        matchScore: finalScore,
+        score: finalScore,
+        profileScore: rec.matchScore,
+        behaviorScore: behaviorRes.score,
+        reasons: updatedReasons,
+      },
       isSaved: savedIds.includes(evt.id),
       isRegistered: registeredIds.includes(evt.id),
     });

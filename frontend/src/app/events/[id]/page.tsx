@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Sparkles, Calendar, MapPin, Bookmark, BookmarkCheck, CheckCircle2, ArrowLeft, ShieldCheck, Target, Award, Clock, DollarSign, ExternalLink, X, Database, Ticket } from 'lucide-react';
-import { fetchApi, RecommendationDetail } from '../../../lib/api';
+import { fetchApi, RecommendationDetail, trackInteraction } from '../../../lib/api';
 import { MatchBadge } from '../../../components/MatchBadge';
 
 export default function EventDetailsPage() {
@@ -27,6 +27,7 @@ export default function EventDetailsPage() {
         setDetail(res);
         setIsRegistered(res.isRegistered);
         setIsSaved(res.isSaved);
+        trackInteraction(id, 'VIEW');
       })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
@@ -39,6 +40,7 @@ export default function EventDetailsPage() {
       setIsRegistered(true);
       setRegTimestamp(new Date().toLocaleString());
       setShowRegModal(true);
+      trackInteraction(id, 'REGISTER');
     } catch (err) {
       console.error(err);
     } finally {
@@ -50,6 +52,7 @@ export default function EventDetailsPage() {
     try {
       const res = await fetchApi<{ saved: boolean }>(`/events/${id}/save`, { method: 'POST' });
       setIsSaved(res.saved);
+      trackInteraction(id, 'SAVE');
     } catch (err) {
       console.error(err);
     }

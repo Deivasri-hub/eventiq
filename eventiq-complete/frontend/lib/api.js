@@ -93,6 +93,10 @@ function handleFallback(path, options, body) {
   const events = getStoredEvents();
   const savedIds = getSavedIds();
 
+  if (path === '/interactions' && options.method === 'POST') {
+    return { success: true };
+  }
+
   if (path === '/auth/reset-password' && options.method === 'POST') {
     return { message: 'Password updated successfully! Please sign in with your new password.' };
   }
@@ -225,3 +229,12 @@ export const auth = {
     localStorage.removeItem('eventiq_user');
   }
 };
+
+export function trackInteraction(eventId, action) {
+  if (!eventId || !action) return;
+  api('/interactions', {
+    method: 'POST',
+    body: JSON.stringify({ event_id: eventId, action })
+  }).catch(() => {});
+}
+

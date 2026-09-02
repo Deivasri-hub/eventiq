@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Nav from '../../../components/Nav';
 import Require from '../../../components/Require';
-import { api } from '../../../lib/api';
+import { api, trackInteraction } from '../../../lib/api';
 
 function Page({ params }) {
   const [e, setE] = useState(null);
@@ -18,6 +18,7 @@ function Page({ params }) {
       .then(res => {
         setE(res);
         setIsSaved(Boolean(res?.is_saved));
+        trackInteraction(params.id, 'VIEW');
       })
       .catch(err => console.error(err));
 
@@ -33,10 +34,12 @@ function Page({ params }) {
       const res = await api(`/events/${e.id}/${type}`, { method: 'POST' });
       if (type === 'register') {
         setMsg('Successfully registered for this event!');
+        trackInteraction(e.id, 'REGISTER');
       } else {
         const nextState = res.saved !== undefined ? res.saved : !isSaved;
         setIsSaved(nextState);
         setMsg(nextState ? 'Event saved to your bookmarks!' : 'Event removed from saved.');
+        trackInteraction(e.id, 'SAVE');
       }
     } catch (err) {
       setMsg(err.message || 'Action failed');
